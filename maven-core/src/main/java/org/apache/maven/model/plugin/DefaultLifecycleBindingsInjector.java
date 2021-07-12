@@ -22,10 +22,13 @@ package org.apache.maven.model.plugin;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.apache.maven.lifecycle.LifeCyclePluginAnalyzer;
 import org.apache.maven.model.Build;
@@ -40,22 +43,21 @@ import org.apache.maven.model.building.ModelProblem.Severity;
 import org.apache.maven.model.building.ModelProblem.Version;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
 import org.apache.maven.model.merge.MavenModelMerger;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
 
 /**
  * Handles injection of plugin executions induced by the lifecycle bindings for a packaging.
  *
  * @author Benjamin Bentmann
  */
-@Component( role = LifecycleBindingsInjector.class )
+@Named
+@Singleton
 public class DefaultLifecycleBindingsInjector
     implements LifecycleBindingsInjector
 {
 
     private LifecycleBindingsMerger merger = new LifecycleBindingsMerger();
 
-    @Requirement
+    @Inject
     private LifeCyclePluginAnalyzer lifecycle;
 
     public void injectLifecycleBindings( Model model, ModelBuildingRequest request, ModelProblemCollector problems )
@@ -76,7 +78,7 @@ public class DefaultLifecycleBindingsInjector
             lifecycleModel.setBuild( new Build() );
             lifecycleModel.getBuild().getPlugins().addAll( defaultPlugins );
 
-            merger.merge( model, lifecycleModel, problems );
+            merger.merge( model, lifecycleModel );
         }
     }
 
@@ -88,36 +90,18 @@ public class DefaultLifecycleBindingsInjector
     {
 
         private static final String PLUGIN_MANAGEMENT = "plugin-management";
-        private static final String NO_VERSION_PLUGINS = "no-version-plugins";
 
-        public void merge( Model target, Model source, ModelProblemCollector problems )
+        public void merge( Model target, Model source )
         {
             if ( target.getBuild() == null )
             {
                 target.setBuild( new Build() );
             }
 
-            Map<Object, Object> context = new HashMap<Object, Object>();
-            context.put( PLUGIN_MANAGEMENT, target.getBuild().getPluginManagement() );
+            Map<Object, Object> context =
+                Collections.<Object, Object>singletonMap( PLUGIN_MANAGEMENT, target.getBuild().getPluginManagement() );
 
             mergePluginContainer_Plugins( target.getBuild(), source.getBuild(), false, context );
-
-            @SuppressWarnings( "unchecked" )
-            Collection<Plugin> defaultVersionPlugins = (Collection<Plugin>) context.get( NO_VERSION_PLUGINS );
-            if ( defaultVersionPlugins != null )
-            {
-                List<String> plugins = new ArrayList<>( defaultVersionPlugins.size() );
-                for ( Plugin p : defaultVersionPlugins )
-                {
-                    plugins.add( p.getArtifactId() );
-                }
-
-                problems.add( new ModelProblemCollectorRequest( Severity.WARNING, Version.BASE )
-                              .setMessage( "Version not locked for default bindings plugins " + plugins
-                                           + ", you should define versions in pluginManagement section of your "
-                                           + "pom.xml or parent" )
-                              .setLocation( target.getLocation( "packaging" ) ) );
-            }
         }
 
         @SuppressWarnings( { "checkstyle:methodname" } )
@@ -163,8 +147,7 @@ public class DefaultLifecycleBindingsInjector
                         for ( Plugin managedPlugin : pluginMgmt.getPlugins() )
                         {
                             Object key = getPluginKey().apply( managedPlugin );
-                            Plugin addedPlugin = // remove plugin only if managedPlugin defines version
-                                ( managedPlugin.getVersion() == null ) ? added.get( key ) : added.remove( key );
+                            Plugin addedPlugin = added.get( key );
                             if ( addedPlugin != null )
                             {
                                 Plugin plugin = managedPlugin.clone();
@@ -172,12 +155,6 @@ public class DefaultLifecycleBindingsInjector
                                 merged.put( key, plugin );
                             }
                         }
-                    }
-
-                    if ( !added.isEmpty() )
-                    {
-                        // some plugins added with default version from bindings
-                        context.put( NO_VERSION_PLUGINS, added.values() );
                     }
                 }
 

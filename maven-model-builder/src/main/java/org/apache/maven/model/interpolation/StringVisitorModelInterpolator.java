@@ -80,7 +80,7 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 /**
  * StringVisitorModelInterpolator
- * 
+ *
  * @since 3.6.2
  */
 @Named
@@ -1420,7 +1420,7 @@ public class StringVisitorModelInterpolator
                     {
                         String value = (String) v;
                         String inter = interpolate( value );
-                        if ( value != inter )
+                        if ( value != inter && inter != null )
                         {
                             entry.setValue( inter );
                         }

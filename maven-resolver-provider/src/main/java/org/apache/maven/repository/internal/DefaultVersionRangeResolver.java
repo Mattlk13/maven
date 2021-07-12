@@ -28,7 +28,6 @@ import org.eclipse.aether.RequestTrace;
 import org.eclipse.aether.SyncContext;
 import org.eclipse.aether.impl.MetadataResolver;
 import org.eclipse.aether.impl.RepositoryEventDispatcher;
-import org.eclipse.aether.impl.SyncContextFactory;
 import org.eclipse.aether.impl.VersionRangeResolver;
 import org.eclipse.aether.metadata.DefaultMetadata;
 import org.eclipse.aether.metadata.Metadata;
@@ -42,6 +41,7 @@ import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.spi.locator.Service;
 import org.eclipse.aether.spi.locator.ServiceLocator;
+import org.eclipse.aether.spi.synccontext.SyncContextFactory;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
@@ -244,7 +244,7 @@ public class DefaultVersionRangeResolver
 
                     if ( metadata.getFile() != null && metadata.getFile().exists() )
                     {
-                        try ( final InputStream in = new FileInputStream( metadata.getFile() ) )
+                        try ( InputStream in = new FileInputStream( metadata.getFile() ) )
                         {
                             versioning = new MetadataXpp3Reader().read( in, false ).getVersioning();
                         }

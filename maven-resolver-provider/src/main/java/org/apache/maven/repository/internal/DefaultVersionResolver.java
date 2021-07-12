@@ -33,7 +33,6 @@ import org.eclipse.aether.SyncContext;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.impl.MetadataResolver;
 import org.eclipse.aether.impl.RepositoryEventDispatcher;
-import org.eclipse.aether.impl.SyncContextFactory;
 import org.eclipse.aether.impl.VersionResolver;
 import org.eclipse.aether.metadata.DefaultMetadata;
 import org.eclipse.aether.metadata.Metadata;
@@ -49,6 +48,7 @@ import org.eclipse.aether.resolution.VersionResolutionException;
 import org.eclipse.aether.resolution.VersionResult;
 import org.eclipse.aether.spi.locator.Service;
 import org.eclipse.aether.spi.locator.ServiceLocator;
+import org.eclipse.aether.spi.synccontext.SyncContextFactory;
 import org.eclipse.aether.util.ConfigUtils;
 
 import javax.inject.Inject;
@@ -310,7 +310,7 @@ public class DefaultVersionResolver
 
                     if ( metadata.getFile() != null && metadata.getFile().exists() )
                     {
-                        try ( final InputStream in = new FileInputStream( metadata.getFile() ) )
+                        try ( InputStream in = new FileInputStream( metadata.getFile() ) )
                         {
                             versioning = new MetadataXpp3Reader().read( in, false ).getVersioning();
 
